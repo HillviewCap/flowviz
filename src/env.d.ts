@@ -2,7 +2,8 @@
 
 // REMOVED: VITE_ANTHROPIC_API_KEY no longer used - all API calls are server-side only
 interface ImportMetaEnv {
-  // No client-side API keys - all authentication handled server-side
+  readonly VITE_AGENTS_URL?: string;
+  readonly VITE_RESEARCH_USER?: string;
 }
 
 interface ImportMeta {
