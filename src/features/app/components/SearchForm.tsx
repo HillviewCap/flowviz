@@ -196,14 +196,21 @@ export default function SearchForm({
                     '& li': { fontSize: '0.85rem', mb: 0.5 }
                   }}
                 >
-                  <li>For Claude: <code style={{
+                  <li>For OpenRouter (recommended - access Claude, GPT, Gemini and more with one key): <code style={{
+                    backgroundColor: 'rgba(0, 0, 0, 0.2)',
+                    padding: '2px 6px',
+                    borderRadius: '3px',
+                    fontFamily: 'monospace',
+                    fontSize: '0.8rem'
+                  }}>OPENROUTER_API_KEY=your-key-here</code></li>
+                  <li>For Claude directly: <code style={{
                     backgroundColor: 'rgba(0, 0, 0, 0.2)',
                     padding: '2px 6px',
                     borderRadius: '3px',
                     fontFamily: 'monospace',
                     fontSize: '0.8rem'
                   }}>ANTHROPIC_API_KEY=your-key-here</code></li>
-                  <li>For GPT: <code style={{
+                  <li>For GPT directly: <code style={{
                     backgroundColor: 'rgba(0, 0, 0, 0.2)',
                     padding: '2px 6px',
                     borderRadius: '3px',

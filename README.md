@@ -4,7 +4,7 @@ Open-source tool that analyzes cybersecurity articles and generates interactive 
 
 ## Features
 
-- Multi-provider AI support (Anthropic Claude, OpenAI GPT, Ollama)
+- Multi-provider AI support (OpenRouter, Anthropic Claude, OpenAI GPT, Ollama)
 - Real-time streaming visualization as content is analyzed
 - MITRE ATT&CK technique mapping
 - Export to PNG, STIX 2.1, Attack Flow Builder (.afb), or JSON
@@ -27,6 +27,7 @@ Open-source tool that analyzes cybersecurity articles and generates interactive 
    cp .env.example .env
    ```
    Edit `.env` and add at least one:
+   - `OPENROUTER_API_KEY` - Get from [openrouter.ai/keys](https://openrouter.ai/keys) (recommended - one key for Claude, GPT, Gemini, and more)
    - `ANTHROPIC_API_KEY` - Get from [console.anthropic.com](https://console.anthropic.com)
    - `OPENAI_API_KEY` - Get from [platform.openai.com](https://platform.openai.com)
    - `OLLAMA_BASE_URL` + `OLLAMA_TEXT_MODEL` - For local models (no API key needed)
@@ -52,12 +53,14 @@ See `.env.example` for all options. Key settings:
 
 ```env
 # Required (choose one or multiple)
+OPENROUTER_API_KEY=
 ANTHROPIC_API_KEY=
 OPENAI_API_KEY=
 OLLAMA_BASE_URL=
 OLLAMA_TEXT_MODEL=
 
 # Optional
+OPENROUTER_MODEL=anthropic/claude-sonnet-5
 ANTHROPIC_MODEL=claude-sonnet-4-5-20250929
 OPENAI_MODEL=gpt-4o
 PORT=3001

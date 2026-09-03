@@ -1,5 +1,6 @@
 import { ClaudeProvider } from './claude-provider.js';
 import { OpenAIProvider } from './openai-provider.js';
+import { OpenRouterProvider } from './openrouter-provider.js';
 import { OllamaProvider } from './ollama-provider.js';
 
 /**
@@ -8,7 +9,7 @@ import { OllamaProvider } from './ollama-provider.js';
 export class ProviderFactory {
   /**
    * Create a provider instance
-   * @param {string} providerName - 'anthropic', 'claude', 'openai', 'gpt', or 'ollama'
+   * @param {string} providerName - 'anthropic', 'claude', 'openai', 'gpt', 'openrouter', or 'ollama'
    * @param {object} config - Provider configuration { apiKey, model, baseUrl }
    * @returns {BaseProvider}
    */
@@ -24,11 +25,14 @@ export class ProviderFactory {
       case 'gpt':
         return new OpenAIProvider(config);
 
+      case 'openrouter':
+        return new OpenRouterProvider(config);
+
       case 'ollama':
         return new OllamaProvider(config);
 
       default:
-        throw new Error(`Unknown provider: ${providerName}. Supported: anthropic, claude, openai, gpt, ollama`);
+        throw new Error(`Unknown provider: ${providerName}. Supported: anthropic, claude, openai, gpt, openrouter, ollama`);
     }
   }
 
@@ -63,6 +67,18 @@ export class ProviderFactory {
       });
     }
 
+    // Check for OpenRouter
+    if (process.env.OPENROUTER_API_KEY) {
+      providers.push({
+        id: 'openrouter',
+        name: 'OpenRouter',
+        displayName: 'OpenRouter',
+        models: OpenRouterProvider.getSupportedModels(),
+        defaultModel: process.env.OPENROUTER_MODEL || 'anthropic/claude-sonnet-5',
+        configured: true
+      });
+    }
+
     // Check for Ollama
     if (process.env.OLLAMA_BASE_URL && (process.env.OLLAMA_TEXT_MODEL || process.env.OLLAMA_VISION_MODEL)) {
       providers.push({
@@ -89,6 +105,9 @@ export class ProviderFactory {
       if (normalized === 'openai' || normalized === 'gpt') {
         return 'openai';
       }
+      if (normalized === 'openrouter') {
+        return 'openrouter';
+      }
       if (normalized === 'anthropic' || normalized === 'claude') {
         return 'anthropic';
       }
@@ -110,7 +129,7 @@ export class ProviderFactory {
 
   /**
    * Get provider configuration from environment
-   * @param {string} providerId - Provider ID ('anthropic', 'openai', or 'ollama')
+   * @param {string} providerId - Provider ID ('anthropic', 'openai', 'openrouter', or 'ollama')
    * @returns {object} Provider configuration
    */
   static getProviderConfig(providerId) {
@@ -129,6 +148,14 @@ export class ProviderFactory {
         apiKey: process.env.OPENAI_API_KEY,
         model: process.env.OPENAI_MODEL || 'gpt-4o',
         baseUrl: process.env.OPENAI_BASE_URL
+      };
+    }
+
+    if (normalized === 'openrouter') {
+      return {
+        apiKey: process.env.OPENROUTER_API_KEY,
+        model: process.env.OPENROUTER_MODEL || 'anthropic/claude-sonnet-5',
+        baseUrl: process.env.OPENROUTER_BASE_URL || 'https://openrouter.ai/api/v1'
       };
     }
 
