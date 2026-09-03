@@ -1,4 +1,5 @@
-// REMOVED: VisionAnalyzer - now handled server-side via /api/vision-analysis
+// REMOVED: VisionAnalyzer - vision runs server-side, inline within /api/analyze-stream
+// (the standalone /api/vision-analysis endpoint this used to name no longer exists)
 
 // Type exports only
 export * from './types';

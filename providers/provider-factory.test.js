@@ -2,6 +2,7 @@ import { describe, it, expect, beforeEach, afterEach, vi } from 'vitest';
 import { ProviderFactory } from './provider-factory.js';
 import { ClaudeProvider } from './claude-provider.js';
 import { OpenAIProvider } from './openai-provider.js';
+import { OpenRouterProvider } from './openrouter-provider.js';
 import { OllamaProvider } from './ollama-provider.js';
 
 describe('ProviderFactory', () => {
@@ -34,6 +35,13 @@ describe('ProviderFactory', () => {
       expect(provider).toBeInstanceOf(OpenAIProvider);
     });
 
+    it('creates OpenRouterProvider for "openrouter"', () => {
+      const provider = ProviderFactory.create('openrouter', { apiKey: 'key', model: 'anthropic/claude-sonnet-5' });
+      expect(provider).toBeInstanceOf(OpenRouterProvider);
+      // OpenRouterProvider extends OpenAIProvider (shared OpenAI-compatible wire format)
+      expect(provider).toBeInstanceOf(OpenAIProvider);
+    });
+
     it('creates OllamaProvider for "ollama"', () => {
       const provider = ProviderFactory.create('ollama', { baseUrl: 'http://localhost:11434' });
       expect(provider).toBeInstanceOf(OllamaProvider);
@@ -56,6 +64,7 @@ describe('ProviderFactory', () => {
     beforeEach(() => {
       delete process.env.ANTHROPIC_API_KEY;
       delete process.env.OPENAI_API_KEY;
+      delete process.env.OPENROUTER_API_KEY;
       delete process.env.OLLAMA_BASE_URL;
       delete process.env.OLLAMA_TEXT_MODEL;
       delete process.env.OLLAMA_VISION_MODEL;
@@ -80,6 +89,23 @@ describe('ProviderFactory', () => {
       expect(providers[0].id).toBe('openai');
     });
 
+    it('includes OpenRouter when OPENROUTER_API_KEY is set', () => {
+      process.env.OPENROUTER_API_KEY = 'sk-or-test';
+      const providers = ProviderFactory.getAvailableProviders();
+      expect(providers).toHaveLength(1);
+      expect(providers[0].id).toBe('openrouter');
+      expect(providers[0].configured).toBe(true);
+      expect(providers[0].defaultModel).toBe('anthropic/claude-sonnet-5');
+      expect(providers[0].models).toContain('anthropic/claude-sonnet-5');
+    });
+
+    it('uses custom OPENROUTER_MODEL when set', () => {
+      process.env.OPENROUTER_API_KEY = 'sk-or-test';
+      process.env.OPENROUTER_MODEL = 'anthropic/claude-opus-4.1';
+      const providers = ProviderFactory.getAvailableProviders();
+      expect(providers[0].defaultModel).toBe('anthropic/claude-opus-4.1');
+    });
+
     it('includes Ollama when base URL and text model are set', () => {
       process.env.OLLAMA_BASE_URL = 'http://127.0.0.1:11434';
       process.env.OLLAMA_TEXT_MODEL = 'mistral:7b';
@@ -94,14 +120,15 @@ describe('ProviderFactory', () => {
       expect(providers).toHaveLength(0);
     });
 
-    it('returns all three when all are configured', () => {
+    it('returns all four when all are configured', () => {
       process.env.ANTHROPIC_API_KEY = 'sk-ant';
       process.env.OPENAI_API_KEY = 'sk-oai';
+      process.env.OPENROUTER_API_KEY = 'sk-or';
       process.env.OLLAMA_BASE_URL = 'http://127.0.0.1:11434';
       process.env.OLLAMA_TEXT_MODEL = 'mistral:7b';
       const providers = ProviderFactory.getAvailableProviders();
-      expect(providers).toHaveLength(3);
-      expect(providers.map(p => p.id)).toEqual(['anthropic', 'openai', 'ollama']);
+      expect(providers).toHaveLength(4);
+      expect(providers.map(p => p.id)).toEqual(['anthropic', 'openai', 'openrouter', 'ollama']);
     });
 
     it('uses custom ANTHROPIC_MODEL when set', () => {
@@ -126,6 +153,7 @@ describe('ProviderFactory', () => {
       delete process.env.DEFAULT_AI_PROVIDER;
       delete process.env.ANTHROPIC_API_KEY;
       delete process.env.OPENAI_API_KEY;
+      delete process.env.OPENROUTER_API_KEY;
       delete process.env.OLLAMA_BASE_URL;
       delete process.env.OLLAMA_TEXT_MODEL;
       delete process.env.OLLAMA_VISION_MODEL;
@@ -144,6 +172,15 @@ describe('ProviderFactory', () => {
       process.env.DEFAULT_AI_PROVIDER = 'openai';
       process.env.OPENAI_API_KEY = 'sk-test';
       expect(ProviderFactory.getDefaultProvider()).toBe('openai');
+    });
+
+    it('respects explicit DEFAULT_AI_PROVIDER=openrouter (IronMonkey platform default)', () => {
+      process.env.DEFAULT_AI_PROVIDER = 'openrouter';
+      process.env.OPENROUTER_API_KEY = 'sk-or-test';
+      // Even with a stale/dead ANTHROPIC_API_KEY still present, the explicit
+      // default must win — this is the exact scenario that broke FlowViz.
+      process.env.ANTHROPIC_API_KEY = 'sk-ant-dead';
+      expect(ProviderFactory.getDefaultProvider()).toBe('openrouter');
     });
 
     it('respects DEFAULT_AI_PROVIDER=claude (alias)', () => {
@@ -181,6 +218,7 @@ describe('ProviderFactory', () => {
     beforeEach(() => {
       process.env.ANTHROPIC_API_KEY = 'sk-ant';
       process.env.OPENAI_API_KEY = 'sk-oai';
+      process.env.OPENROUTER_API_KEY = 'sk-or';
       process.env.OLLAMA_BASE_URL = 'http://127.0.0.1:11434';
       process.env.OLLAMA_TEXT_MODEL = 'mistral:7b';
       process.env.OLLAMA_VISION_MODEL = 'qwen3-vl';
@@ -198,6 +236,23 @@ describe('ProviderFactory', () => {
       expect(config).toHaveProperty('apiKey', 'sk-oai');
       expect(config).toHaveProperty('model');
       expect(config).toHaveProperty('baseUrl');
+    });
+
+    it('returns OpenRouter config with correct shape and defaults', () => {
+      delete process.env.OPENROUTER_MODEL;
+      delete process.env.OPENROUTER_BASE_URL;
+      const config = ProviderFactory.getProviderConfig('openrouter');
+      expect(config).toHaveProperty('apiKey', 'sk-or');
+      expect(config.model).toBe('anthropic/claude-sonnet-5');
+      expect(config.baseUrl).toBe('https://openrouter.ai/api/v1');
+    });
+
+    it('respects OPENROUTER_MODEL and OPENROUTER_BASE_URL overrides', () => {
+      process.env.OPENROUTER_MODEL = 'openai/gpt-5.1';
+      process.env.OPENROUTER_BASE_URL = 'https://custom.openrouter.proxy/v1';
+      const config = ProviderFactory.getProviderConfig('openrouter');
+      expect(config.model).toBe('openai/gpt-5.1');
+      expect(config.baseUrl).toBe('https://custom.openrouter.proxy/v1');
     });
 
     it('returns Ollama config with correct shape', () => {
@@ -229,6 +284,7 @@ describe('ProviderFactory', () => {
     beforeEach(() => {
       delete process.env.ANTHROPIC_API_KEY;
       delete process.env.OPENAI_API_KEY;
+      delete process.env.OPENROUTER_API_KEY;
       delete process.env.OLLAMA_BASE_URL;
       delete process.env.OLLAMA_TEXT_MODEL;
       delete process.env.OLLAMA_VISION_MODEL;
@@ -257,6 +313,7 @@ describe('ProviderFactory', () => {
     it('returns null when provider not configured', () => {
       delete process.env.ANTHROPIC_API_KEY;
       delete process.env.OPENAI_API_KEY;
+      delete process.env.OPENROUTER_API_KEY;
       delete process.env.OLLAMA_BASE_URL;
       expect(ProviderFactory.getProviderInfo('anthropic')).toBeNull();
     });
