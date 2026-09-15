@@ -1,6 +1,4 @@
-import React, { useEffect, lazy, Suspense } from 'react';
-
-const ResearchCanvas = lazy(() => import('./features/research/ResearchCanvas'));
+import React, { useEffect } from 'react';
 import { Box, Snackbar, Container, Alert } from '@mui/material';
 import { FlowAlert } from './shared/components/Alert';
 import { flowVizTheme } from './shared/theme/flowviz-theme';
@@ -32,14 +30,6 @@ const getTextStats = (text: string) => {
 };
 
 export default function App() {
-  if (window.location.pathname === '/research') {
-    return (
-      <Suspense fallback={null}>
-        <ResearchCanvas />
-      </Suspense>
-    );
-  }
-
   const {
     // Core state
     url,
